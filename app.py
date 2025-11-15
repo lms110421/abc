@@ -1,7 +1,7 @@
 import streamlit as st
 import random
 
-# --- 설정 및 초기화 (수정됨) ---
+# --- 설정 및 초기화 (수정 없음) ---
 
 st.set_page_config(
     page_title="🎲 포인트 홀짝 주사위 게임 (3배 보상)",
@@ -32,7 +32,7 @@ DICE_ICONS = {
     4: "⚃", 5: "⚄", 6: "⚅"
 }
 
-# --- 핵심 함수 ---
+# --- 핵심 함수 (수정 없음) ---
 
 def roll_dice_odd_even(bet_amount, user_choice):
     """홀짝 주사위를 굴리고 포인트를 업데이트하는 핵심 게임 로직"""
@@ -104,4 +104,65 @@ col_icon.markdown(
     unsafe_allow_html=True
 )
 
-st.markdown("
+st.markdown("---")
+
+## ⚙️ 게임 설정 및 실행
+
+# 0. 포인트 부족 처리
+if st.session_state.points < MIN_BET:
+    st.error(f"포인트가 **{MIN_BET}P** 미만입니다! 더 이상 게임을 할 수 없습니다. 😥")
+    if st.button(f"포인트 초기화 ({INITIAL_POINTS}P)", key='reset_zero', use_container_width=True):
+        reset_points()
+    # 포인트가 부족하면 아래 게임 설정 섹션은 건너뜀
+else:
+    # 1. 베팅 금액 설정
+    max_bet = min(st.session_state.points, MAX_BET_LIMIT)
+    
+    # 슬라이더 기본값 설정 (마지막 베팅 값과 현재 최대 베팅 금액 비교)
+    default_bet = min(st.session_state.last_bet, max_bet)
+    
+    # 👇👇👇 이 부분이 보완되었습니다. 👇👇👇
+    # MIN_BET(100)보다 포인트가 많은 경우에만 이 블록에 진입하므로,
+    # 슬라이더의 최소값은 MIN_BET으로 고정하는 것이 논리적입니다.
+    
+    bet = st.slider(
+        f"베팅할 포인트 금액을 선택하세요. (최소 **{MIN_BET}P** / 최대 **{max_bet}P**)", 
+        min_value=MIN_BET, # min_slider 대신 MIN_BET으로 고정
+        max_value=max_bet, 
+        step=MIN_BET, 
+        value=default_bet,
+        key='bet_slider'
+    )
+    # 👆👆👆👆👆👆👆👆👆👆👆👆👆👆👆
+
+    
+    # 2. 홀짝 선택
+    choice = st.radio(
+        "주사위 눈이 **홀수**일까요, **짝수**일까요?",
+        options=["홀수", "짝수"],
+        index=0 if st.session_state.last_choice == "홀수" else 1,
+        horizontal=True,
+        key='choice_radio'
+    )
+
+    st.info(f"선택: **{choice}** | 베팅 금액: **{bet} P** | 승리 시 획득: **{bet * WIN_MULTIPLIER} P**")
+    
+    # 3. 게임 실행 버튼
+    # 버튼 비활성화 조건: 선택된 베팅 금액보다 보유 포인트가 적거나, 최소 베팅 금액 미만일 경우
+    # (슬라이더 min_value 고정으로 'bet < MIN_BET' 조건은 사실상 불필요하지만 안전을 위해 유지)
+    is_disabled = (st.session_state.points < bet) or (bet < MIN_BET)
+    
+    if st.button("🔥 주사위 굴리기 실행", use_container_width=True, disabled=is_disabled):
+        roll_dice_odd_even(bet, choice)
+
+## 📊 게임 결과
+st.markdown("---")
+
+st.subheader("마지막 게임 결과")
+st.markdown(st.session_state.game_result)
+
+# 포인트 충전 (초기화) 버튼
+# 초기 포인트(1000P) 미만이고 0P 이상일 때만 버튼 표시
+if st.session_state.points < INITIAL_POINTS and st.session_state.points >= MIN_BET:
+    if st.button(f"포인트 충전 ({INITIAL_POINTS}P로 초기화)", key='reset_normal', use_container_width=True):
+        reset_points()
