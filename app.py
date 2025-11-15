@@ -1,35 +1,26 @@
 import streamlit as st
 import random
 
-# --- 설정 및 초기화 ---
+# --- 설정 및 상수 정의 ---
 
 st.set_page_config(
-    page_title="⚽️ 강화 시뮬레이터 (파괴 시스템)",
+    page_title="⚽️ 강화 시뮬레이터 (오류 방지)",
     layout="centered"
 )
 
-# 상수 정의
+# 상수
 INITIAL_POINTS = 1000
 MAX_LEVEL = 5
-MIN_BET = 100 # 베팅 최소 금액 상향
+MIN_BET = 100 # 베팅 최소 금액
 
 # 레벨별 강화 성공 확률 (%)
-SUCCESS_RATES = {
-    1: 80,  # +1 -> +2: 80% (첫 강화는 비교적 쉬움)
-    2: 50,  # +2 -> +3: 50%
-    3: 30,  # +3 -> +4: 30%
-    4: 10   # +4 -> +5: 10% (최고 레벨은 극악)
-}
+SUCCESS_RATES = {1: 80, 2: 50, 3: 30, 4: 10}
 
-# 레벨별 고정 비용 (강화 재료/수수료, 성공/실패와 무관하게 소모됨)
-FIXED_COSTS = {
-    1: 50, 
-    2: 100, 
-    3: 150, 
-    4: 200
-}
+# 레벨별 고정 비용 (항상 소모됨)
+FIXED_COSTS = {1: 50, 2: 100, 3: 150, 4: 200}
 
-# 세션 상태 초기화
+# --- 세션 상태 초기화 ---
+
 if 'points' not in st.session_state:
     st.session_state.points = INITIAL_POINTS
 if 'item_level' not in st.session_state:
@@ -51,5 +42,10 @@ def attempt_upgrade(current_level, bet_amount):
     fixed_cost = FIXED_COSTS.get(current_level, 0)
     total_cost = bet_amount + fixed_cost
     
-    # 1. 포인트 부족 여부 확인
-    if st.session_state.
+    # 포인트 부족 여부 확인
+    if st.session_state.points < total_cost:
+        st.session_state.game_result = f"⚠️ **오류:** 총 비용({total_cost}P) 지불에 포인트가 부족합니다."
+        return
+        
+    # 포인트 소모
+    st.session_state.points
