@@ -1,69 +1,86 @@
 import streamlit as st
-import colorsys
+import random
 
-# Streamlit 앱의 제목 설정
-st.title('🎨 박광재의 빤스색 맞추기')
-st.write('아래 색상 선택기를 사용하여 비밀 색상을 맞춰보세요!')
+# --- 초기 설정 및 잔액 관리 ---
+INITIAL_BALANCE = 10000
+BET_AMOUNT = 1000
+WIN_AMOUNT = 2000
+
+# 세션 상태 초기화
+if 'balance' not in st.session_state:
+    st.session_state.balance = INITIAL_BALANCE
+if 'card_deck' not in st.session_state:
+    # 4개의 카드를 준비합니다. (예: A, K, Q, J)
+    st.session_state.card_deck = ['A', 'K', 'Q', 'J']
+if 'secret_card' not in st.session_state:
+    st.session_state.secret_card = random.choice(st.session_state.card_deck)
+if 'game_message' not in st.session_state:
+    st.session_state.game_message = "게임을 시작합니다! 카드를 선택하세요."
+
+st.title('🃏 가상 포인트 카드 예측 게임')
+st.write(f'현재 잔액: **{st.session_state.balance:,}** 포인트')
+st.write(f'한 번 시도할 때마다 **{BET_AMOUNT:,}** 포인트가 차감되며, 맞추면 **{WIN_AMOUNT:,}** 포인트를 얻습니다.')
 
 st.markdown('---')
 
-# --- 비밀 색상 설정 ---
-# 비밀 색상: 여기서는 Streamlit의 상징색 중 하나와 비슷한 연한 청록색 계열로 설정했습니다.
-SECRET_HEX = '#00CED1'  # 16진수 코드 (Deep Sky Blue)
+# --- 잔액 확인 및 게임 시작 가능 여부 ---
+if st.session_state.balance < BET_AMOUNT:
+    st.error("잔액 부족! 최소 시도 금액 1,000 포인트가 필요합니다.")
+    if st.button('잔액 충전 (10,000 포인트)'):
+        st.session_state.balance = INITIAL_BALANCE
+        st.session_state.game_message = "잔액이 충전되었습니다!"
+        st.experimental_rerun()
+    st.stop() 
 
-# 16진수 코드를 R, G, B 값으로 변환하는 함수 (비교를 위해)
-def hex_to_rgb(hex_code):
-    hex_code = hex_code.lstrip('#')
-    return tuple(int(hex_code[i:i+2], 16) for i in (0, 2, 4))
 
-# 비밀 색상의 RGB 값
-SECRET_RGB = hex_to_rgb(SECRET_HEX)
+### 1. 사용자 예측 (카드 선택)
+user_choice = st.radio(
+    '어떤 카드가 뽑힐까요?',
+    st.session_state.card_deck,
+    index=None # 기본 선택 없음
+)
 
-### 1. 사용자 입력 받기
-# 색상 선택기 위젯
-user_color = st.color_picker('당신의 추측 색상을 선택하세요:', '#ffffff') # 기본값은 흰색
+st.markdown('---')
 
-### 2. 결과 확인 버튼
-if st.button('색상 유추 결과 확인'):
-    # 사용자가 선택한 색상의 RGB 값
-    USER_RGB = hex_to_rgb(user_color)
-
-    # --- 유추 로직: 색상 차이 계산 ---
-    # 각 R, G, B 채널별 차이의 제곱을 합하여 색상 간의 거리를 계산 (유클리드 거리)
-    r_diff = (SECRET_RGB[0] - USER_RGB[0]) ** 2
-    g_diff = (SECRET_RGB[1] - USER_RGB[1]) ** 2
-    b_diff = (SECRET_RGB[2] - USER_RGB[2]) ** 2
-    
-    # 총 색상 차이 (Distance)
-    color_distance = (r_diff + g_diff + b_diff) ** 0.5
-    
-    # 0에 가까울수록 정답입니다. (최대값은 약 441.67)
-
-    st.subheader('당신의 유추 결과')
-    
-    # 비밀 색상과 사용자의 선택을 나란히 보여줍니다.
-    col1, col2 = st.columns(2)
-    with col1:
-        st.write('**당신의 선택**')
-        st.markdown(f'<div style="width:100px; height:50px; background-color:{user_color}; border:1px solid #ccc;"></div>', unsafe_allow_html=True)
-        st.write(f'HEX: `{user_color}`')
-    with col2:
-        st.write('**비밀 색상**')
-        # SECRET_HEX를 직접 보여주지 않고 비밀로 유지합니다.
-        st.markdown(f'<div style="width:100px; height:50px; background-color:black; border:1px solid #ccc;"></div>', unsafe_allow_html=True) 
-        st.write(f'HEX: `비밀`')
-        
-
-    st.markdown(f'**색상 차이 (거리):** **{color_distance:.2f}** (0에 가까울수록 정답!)')
-
-    # --- 피드백 메시지 ---
-    if color_distance == 0:
-        st.success('🎉 **완벽합니다!** 비밀 색상을 정확히 맞추셨어요!')
-        st.balloons()
-        st.markdown(f'비밀 색상은 **`{SECRET_HEX}`**였습니다.')
-    elif color_distance < 50:
-        st.warning('👍 **아주 가깝습니다!** 거의 정답에 도달했어요.')
-    elif color_distance < 150:
-        st.info('🤏 **조금 더!** 아직 차이가 있지만, 방향은 맞습니다.')
+### 2. 카드 예측 버튼
+if st.button('카드 예측하기!'):
+    if user_choice is None:
+        st.warning('⚠️ 카드를 먼저 선택해 주세요.')
     else:
-        st.error('😔 **아직 멀어요.** 다른 색상 계열을 시도해 보세요.')
+        # --- 게임 로직 시작 ---
+        
+        # 1. 잔액 차감 (베팅)
+        st.session_state.balance -= BET_AMOUNT
+        
+        # 2. 결과 확인
+        is_win = (user_choice == st.session_state.secret_card)
+
+        st.subheader('결과 확인!')
+        
+        # 3. 결과에 따른 포인트 계산 및 메시지 업데이트
+        if is_win:
+            # 승리: 2000 포인트 획득 (차감된 1000포인트 + 1000포인트 이익)
+            st.session_state.balance += WIN_AMOUNT
+            st.session_state.game_message = (
+                f'🎉 **정답입니다!** 뽑힌 카드는 **{st.session_state.secret_card}**! '
+                f'{WIN_AMOUNT:,} 포인트를 획득했습니다.'
+            )
+            st.success(st.session_state.game_message)
+            st.balloons()
+        else:
+            # 패배: 1000 포인트만 잃음 (추가 포인트 없음)
+            st.session_state.game_message = (
+                f'😭 **아쉽네요!** 뽑힌 카드는 **{st.session_state.secret_card}**였습니다. '
+                f'{BET_AMOUNT:,} 포인트를 잃었습니다.'
+            )
+            st.error(st.session_state.game_message)
+
+        # 4. 다음 라운드를 위해 비밀 카드 새로 뽑기
+        st.session_state.secret_card = random.choice(st.session_state.card_deck)
+        
+        # 잔액 및 메시지 업데이트를 위해 재실행
+        st.experimental_rerun()
+
+else:
+    # 버튼을 누르기 전에 마지막 메시지 표시
+    st.info(st.session_state.game_message)
