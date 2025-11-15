@@ -5,7 +5,7 @@ import random
 INITIAL_BALANCE = 10000
 BET_AMOUNT = 1000
 
-# 슬롯 심볼 및 배당 설정 (가짜 돈으로 인한 재미 요소)
+# 슬롯 심볼 및 배당 설정
 SYMBOLS = ['🍒', '🔔', '⭐', '💎']
 PAYOUTS = {
     3: 5000,  # 트리플 일치 시 5,000 포인트 획득
@@ -37,7 +37,6 @@ if st.session_state.balance < BET_AMOUNT:
 
 
 ### 1. 현재 슬롯 상태 표시
-# 릴 결과를 큰 글씨로 보여줍니다. (움직이는 느낌을 주기 위해)
 st.markdown(
     f"<h1 style='text-align: center; font-size: 80px; margin: 20px 0;'>{' '.join(st.session_state.reels)}</h1>", 
     unsafe_allow_html=True
@@ -49,16 +48,3 @@ st.markdown('---')
 if st.button('릴 돌리기! 🔄'):
     # 1. 잔액 차감 (베팅)
     st.session_state.balance -= BET_AMOUNT
-    
-    # 2. 릴 무작위로 돌리기
-    new_reels = random.choices(SYMBOLS, k=3)
-    st.session_state.reels = new_reels
-    
-    # 3. 결과 분석
-    counts = {}
-    for symbol in new_reels:
-        counts[symbol] = counts.get(symbol, 0) + 1
-    
-    # 가장 많이 나온 심볼의 개수
-    max
-    
