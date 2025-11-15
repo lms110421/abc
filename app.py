@@ -1,50 +1,38 @@
 import streamlit as st
 import random
 
-# --- 게임 설정 ---
-INITIAL_BALANCE = 10000
-BET_AMOUNT = 1000
+# --- 설정 및 초기화 ---
 
-# 슬롯 심볼 및 배당 설정
-SYMBOLS = ['🍒', '🔔', '⭐', '💎']
-PAYOUTS = {
-    3: 5000,  # 트리플 일치 시 5,000 포인트 획득
-    2: 1500   # 더블 일치 시 1,500 포인트 획득
-}
-
-# --- 세션 상태 초기화 ---
-if 'balance' not in st.session_state:
-    st.session_state.balance = INITIAL_BALANCE
-if 'reels' not in st.session_state:
-    st.session_state.reels = ['❓', '❓', '❓']
-if 'slot_message' not in st.session_state:
-    st.session_state.slot_message = "아래 버튼을 눌러 슬롯을 돌리세요!"
-
-st.title('🎰 이모티콘 슬롯 머신')
-st.write(f'현재 잔액: **{st.session_state.balance:,}** 포인트')
-st.write(f'한 번 돌릴 때마다 **{BET_AMOUNT:,}** 포인트가 베팅됩니다.')
-
-st.markdown('---')
-
-# --- 잔액 확인 및 게임 가능 여부 ---
-if st.session_state.balance < BET_AMOUNT:
-    st.error("잔액 부족! 최소 시도 금액 1,000 포인트가 필요합니다.")
-    if st.button('잔액 충전 (10,000 포인트)'):
-        st.session_state.balance = INITIAL_BALANCE
-        st.session_state.slot_message = "잔액이 충전되었습니다!"
-        st.experimental_rerun()
-    st.stop() 
-
-
-### 1. 현재 슬롯 상태 표시
-st.markdown(
-    f"<h1 style='text-align: center; font-size: 80px; margin: 20px 0;'>{' '.join(st.session_state.reels)}</h1>", 
-    unsafe_allow_html=True
+st.set_page_config(
+    page_title="🎲 포인트 주사위 게임",
+    layout="centered"
 )
 
-st.markdown('---')
+# 세션 상태에 포인트가 없으면 초기값(100)으로 설정
+if 'points' not in st.session_state:
+    st.session_state.points = 100
+if 'game_result' not in st.session_state:
+    st.session_state.game_result = "게임을 시작해 보세요!"
 
-### 2. 슬롯 돌리기 버튼
-if st.button('릴 돌리기! 🔄'):
-    # 1. 잔액 차감 (베팅)
-    st.session_state.balance -= BET_AMOUNT
+# --- 함수 정의 ---
+
+def roll_dice(bet_amount, target_number):
+    """주사위를 굴리고 포인트를 업데이트하는 핵심 게임 로직"""
+    
+    # 1. 포인트 차감 (성공/실패 여부와 관계없이 소모)
+    st.session_state.points -= bet_amount
+    
+    # 2. 주사위 굴리기
+    dice_roll = random.randint(1, 6)
+    
+    st.session_state.game_result = f"**주사위 결과: {dice_roll}**\n\n"
+    
+    # 3. 승리 조건 확인 (주사위 눈이 목표 숫자보다 크거나 같으면 승리)
+    if dice_roll >= target_number:
+        # 승리 시 획득 포인트 (건 금액의 2배)
+        winnings = bet_amount * 2
+        st.session_state.points += winnings
+        st.session_state.game_result += f"🎉 **승리!** {winnings} 포인트를 획득했습니다. (현재 포인트: {st.session_state.points})"
+    else:
+        # 패배 시 (이미 포인트는 차감되었으므로 추가 작업 없음)
+        st.session_state.game_result += f"😢 **실패...** 건 포인트 {bet_amount}를
